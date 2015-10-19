@@ -108,6 +108,7 @@
 	(messages (slack-search-search-messages query)))
     (with-current-buffer buffer
       (erase-buffer)
+      (font-lock-mode)
       (slack-search-print-header-in-buffer query)
       (slack-search-print-search-results-in-buffer messages)
       (pop-to-buffer buffer))))
