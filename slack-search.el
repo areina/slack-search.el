@@ -55,19 +55,6 @@
   (let ((ts-as-time (slack-search-parse-timestamp timestamp)))
     (format-time-string "%Y-%m-%d %T" ts-as-time)))
 
-(defun slack-search-format-message (message)
-  "Return the MESSAGE as a formatted string to print in a buffer."
-  (let ((username (cdr (assoc 'username message)))
-	(message (cdr (assoc 'text message)))
-	(timestamp (slack-search-format-timestamp (cdr (assoc 'ts message)))))
-    (format "[%s] %s: %s" timestamp username message)))
-
-(defun slack-search-compose-message (match)
-  "Compose a message alist extracting needed fields from MATCH."
-  `(,(assoc 'text match)
-    ,(assoc 'username match)
-    ,(assoc 'ts match)))
-
 (defun slack-search-search-url (query)
   "Return the url for search including required params and QUERY in the querystring."
   (format "%s?token=%s&query=%s"
@@ -80,22 +67,35 @@
   (let ((response (slack-search-read-json-from-url (slack-search-search-url query))))
     (cdr (assoc 'matches (cdr (assoc 'messages response))))))
 
-(defun slack-search-search (query)
-  "Return a list of formatted messages for a search with QUERY terms."
-  (let ((matches (slack-search-search-messages query)))
-    (mapcar (lambda (match)
-	      (slack-search-format-message (slack-search-compose-message match)))
-	    matches)))
-
 (defun slack-search-print-header-in-buffer (query)
   "Pretty print a header with QUERY info in current buffer."
   (insert (format "Results for query: '%s'\n\n" query)))
 
-(defun slack-search-print-search-results-in-buffer (messages)
-  "Pretty print MESSAGES in current buffer."
-  (mapcar (lambda (message)
-	    (insert message)
-	    (insert "\n")) messages))
+(defvar slack-search-message-format "<%s> [%s] %s\n")
+
+(defun slack-search-format-message (message)
+  "Format MESSAGE and stylize it."
+  (let* ((primary? (or (cdr (assoc 'previous message)) (cdr (assoc 'next message))))
+	 (face-color (if primary? "white" "darkGrey"))
+	 (username (cdr (assoc 'username message)))
+	 (timestamp (slack-search-format-timestamp (cdr (assoc 'ts message))))
+	 (text (cdr (assoc 'text message))))
+
+    (propertize (format slack-search-message-format
+			username
+			timestamp
+			text)
+		'font-lock-face `(:foreground ,face-color))))
+
+(defun slack-search-print-search-results-in-buffer (results)
+  "Pretty print search RESULTS in current buffer."
+  (mapcar (lambda (match)
+	    (insert (slack-search-format-message (cdr (assoc 'previous_2 match))))
+	    (insert (slack-search-format-message (cdr (assoc 'previous match))))
+	    (insert (slack-search-format-message match))
+	    (insert (slack-search-format-message (cdr (assoc 'next match))))
+	    (insert (slack-search-format-message (cdr (assoc 'next_2 match))))
+	    (insert "\n")) results))
 
 (defun slack-search-buffer ()
   "Return the buffer containing search results."
@@ -105,7 +105,7 @@
   "Search QUERY through slack API and print results in a buffer."
   (interactive "sQuery: ")
   (let ((buffer (slack-search-buffer))
-	(messages (slack-search-search query)))
+	(messages (slack-search-search-messages query)))
     (with-current-buffer buffer
       (erase-buffer)
       (slack-search-print-header-in-buffer query)
