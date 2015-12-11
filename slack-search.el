@@ -89,13 +89,15 @@
 
 (defun slack-search-print-search-results-in-buffer (results)
   "Pretty print search RESULTS in current buffer."
-  (mapcar (lambda (match)
-	    (insert (slack-search-format-message (cdr (assoc 'previous_2 match))))
-	    (insert (slack-search-format-message (cdr (assoc 'previous match))))
-	    (insert (slack-search-format-message match))
-	    (insert (slack-search-format-message (cdr (assoc 'next match))))
-	    (insert (slack-search-format-message (cdr (assoc 'next_2 match))))
-	    (insert "\n")) results))
+  (let ((fields '(previous_2 previous self next next_2)))
+    (mapcar (lambda (match)
+	      (dolist (field fields)
+		(if (eq 'self field)
+		    (insert (slack-search-format-message match))
+		(let ((value (assoc field match)))
+		  (when value
+		    (insert (slack-search-format-message value))))))
+	      (insert "\n")) results)))
 
 (defun slack-search-buffer ()
   "Return the buffer containing search results."
