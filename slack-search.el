@@ -57,7 +57,7 @@
 
 (defun slack-search-search-url (query)
   "Return the url for search including required params and QUERY in the querystring."
-  (format "%s?token=%s&query=%s"
+  (format "%s?token=%s&query=%s&count=300"
 	  slack-search-api-url
 	  slack-search-user-token
 	  query))
