@@ -111,7 +111,8 @@
       (font-lock-mode)
       (slack-search-print-header-in-buffer query)
       (slack-search-print-search-results-in-buffer messages)
-      (pop-to-buffer buffer))))
+      (pop-to-buffer buffer)
+      (goto-char (point-min)))))
 
 (provide 'slack-search)
 
